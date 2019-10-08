@@ -71,6 +71,7 @@ public class BleHelper {
     private UUID indicate_UUID_chara;
 
     private OnBleScanStateListener onBleScanListener;
+    private OnBleWriteInterceptListener onBleWriteInterceptListener;
     private HashMap<String, OnBleConnectStateListener> onBleConnectStateListenerMap = new LinkedHashMap<>();
 
     public static BleHelper instance;
@@ -381,8 +382,6 @@ public class BleHelper {
         }
     }
 
-    ;
-
     private void initServiceAndChara(String address) {
         BluetoothGatt bluetoothGatt = bleGattMap.get(address);
         if (bluetoothGatt == null) {
@@ -421,6 +420,9 @@ public class BleHelper {
      * 发送数据
      */
     public void write(String address, byte[]... datas) {
+        if (skipWrite(address)) {
+            return;
+        }
         BluetoothGatt bluetoothGatt = bleGattMap.get(address);
         if (bluetoothGatt == null) {
             return;
@@ -440,6 +442,9 @@ public class BleHelper {
      * 发送数据
      */
     public void write(String address, String... datas) {
+        if (skipWrite(address)) {
+            return;
+        }
         BluetoothGatt bluetoothGatt = bleGattMap.get(address);
         if (bluetoothGatt == null) {
             return;
@@ -455,6 +460,10 @@ public class BleHelper {
         }
     }
 
+    private boolean skipWrite(String address) {
+        return onBleWriteInterceptListener != null && onBleWriteInterceptListener.skipWrite(address);
+    }
+
     public void setOnBleScanListener(OnBleScanStateListener onBleScanListener) {
         this.onBleScanListener = onBleScanListener;
     }
@@ -465,6 +474,13 @@ public class BleHelper {
         }
     }
 
+    public void setOnBleWriteInterceptListener(OnBleWriteInterceptListener onBleWriteInterceptListener) {
+        this.onBleWriteInterceptListener = onBleWriteInterceptListener;
+    }
+
+    /**
+     * 蓝牙扫描监听器
+     */
     public interface OnBleScanStateListener {
 
         /**
@@ -491,6 +507,9 @@ public class BleHelper {
         void onError(String msg);
     }
 
+    /**
+     * 蓝牙连接状态监听器
+     */
     public interface OnBleConnectStateListener {
 
         /**
@@ -512,5 +531,17 @@ public class BleHelper {
          * 断开连接
          */
         void onDisConnect(String msg);
+    }
+
+    /**
+     * 蓝牙写入拦截监听器
+     */
+    public interface OnBleWriteInterceptListener {
+
+        /**
+         * @param address 蓝牙地址
+         * @return true: 跳过写入, false: 继续写入
+         */
+        boolean skipWrite(String address);
     }
 }
