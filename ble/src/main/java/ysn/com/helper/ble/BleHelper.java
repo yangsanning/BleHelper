@@ -45,6 +45,7 @@ public class BleHelper {
     private Activity activity;
     private BluetoothAdapter bluetoothAdapter;
     private HashMap<String, BluetoothGatt> bleGattMap = new LinkedHashMap<>();
+    private byte[][] datas;
 
     /**
      * 是否正在扫描
@@ -152,6 +153,7 @@ public class BleHelper {
      * @param scanMillis 扫描时间
      */
     public void startScan(long scanMillis) {
+        stopScan();
         if (isInitBluetoothAdapter() && !isScanning) {
             isScanning = true;
             if (onBleScanListener != null) {
@@ -317,10 +319,7 @@ public class BleHelper {
                     break;
                 default:
                     // 连接失败
-                    BluetoothGatt bluetoothGatt = bleGattMap.get(address);
-                    if (bluetoothGatt != null) {
-                        bluetoothGatt.close();
-                    }
+                    disConnect(address);
                     activity.runOnUiThread(() -> {
                         for (Map.Entry<String, OnBleConnectStateListener> entry : onBleConnectStateListenerMap.entrySet()) {
                             if (address.equals(entry.getKey())) {
@@ -330,6 +329,10 @@ public class BleHelper {
 
                     });
                     break;
+            }
+
+            if (newState == BluetoothGatt.STATE_DISCONNECTED) {
+                close(address);
             }
         }
 
@@ -352,6 +355,7 @@ public class BleHelper {
                 for (Map.Entry<String, OnBleConnectStateListener> entry : onBleConnectStateListenerMap.entrySet()) {
                     if (address.equals(entry.getKey())) {
                         entry.getValue().onConnectSuccess(("蓝牙连接成功"));
+                        write(address, datas);
                     }
                 }
             });
@@ -423,8 +427,13 @@ public class BleHelper {
         if (skipWrite(address)) {
             return;
         }
+        if (datas == null) {
+            return;
+        }
         BluetoothGatt bluetoothGatt = bleGattMap.get(address);
         if (bluetoothGatt == null) {
+            this.datas = datas;
+            connect(address);
             return;
         }
         BluetoothGattService service = bluetoothGatt.getService(write_UUID_service);
@@ -436,6 +445,7 @@ public class BleHelper {
             charaWrite.setValue(data);
             bluetoothGatt.writeCharacteristic(charaWrite);
         }
+        this.datas = null;
     }
 
     /**
@@ -472,6 +482,10 @@ public class BleHelper {
         if (!onBleConnectStateListenerMap.containsKey(address)) {
             onBleConnectStateListenerMap.put(address, onBleConnectStateListener);
         }
+    }
+
+    public void removeBleConnectStateListenerList(String address) {
+        onBleConnectStateListenerMap.remove(address);
     }
 
     public void setOnBleWriteInterceptListener(OnBleWriteInterceptListener onBleWriteInterceptListener) {
