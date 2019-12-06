@@ -74,6 +74,7 @@ public class BleHelper {
     private OnBleScanStateListener onBleScanListener;
     private OnBleWriteInterceptListener onBleWriteInterceptListener;
     private HashMap<String, OnBleConnectStateListener> onBleConnectStateListenerMap = new LinkedHashMap<>();
+    private OnDataReceivedListener onDataReceivedListener;
 
     public static BleHelper instance;
 
@@ -378,11 +379,16 @@ public class BleHelper {
         }
 
         /**
-         * 接收到硬件返回的数据
+         * 接收到设备返回的数据
          */
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
+            activity.runOnUiThread(() -> {
+                if (onDataReceivedListener != null) {
+                    onDataReceivedListener.onDataReceived(new String(characteristic.getValue()));
+                }
+            });
         }
     }
 
@@ -492,6 +498,10 @@ public class BleHelper {
         this.onBleWriteInterceptListener = onBleWriteInterceptListener;
     }
 
+    public void setOnDataReceivedListener(OnDataReceivedListener onDataReceivedListener) {
+        this.onDataReceivedListener = onDataReceivedListener;
+    }
+
     /**
      * 蓝牙扫描监听器
      */
@@ -557,5 +567,18 @@ public class BleHelper {
          * @return true: 跳过写入, false: 继续写入
          */
         boolean skipWrite(String address);
+    }
+
+    /**
+     * 蓝牙接收到设备返回的数据
+     */
+    public interface OnDataReceivedListener {
+
+        /**
+         * 数据回调
+         *
+         * @param newData 接收到的数据
+         */
+        void onDataReceived(String newData);
     }
 }
