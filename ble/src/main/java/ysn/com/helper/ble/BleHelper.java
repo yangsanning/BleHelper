@@ -386,7 +386,7 @@ public class BleHelper {
             super.onCharacteristicChanged(gatt, characteristic);
             activity.runOnUiThread(() -> {
                 if (onDataReceivedListener != null) {
-                    onDataReceivedListener.onDataReceived(new String(characteristic.getValue()));
+                    onDataReceivedListener.onDataReceived(address, new String(characteristic.getValue()));
                 }
             });
         }
@@ -576,9 +576,9 @@ public class BleHelper {
 
         /**
          * 数据回调
-         *
+         * @param address 蓝牙地址
          * @param newData 接收到的数据
          */
-        void onDataReceived(String newData);
+        void onDataReceived(String address, String newData);
     }
 }
